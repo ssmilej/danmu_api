@@ -199,8 +199,7 @@ export class Envs {
    * @returns {Array} 服务器列表
    */
   static resolveVodServers() {
-    const defaultVodServers = '金蝉@https://zy.jinchancaiji.com,789@https://www.caiji.cyou,听风@https://gctf.tfdh.top';
-    let vodServersConfig = this.get('VOD_SERVERS', defaultVodServers, 'string');
+    const vodServersConfig = this.get('VOD_SERVERS', '', 'string');
 
     if (!vodServersConfig || vodServersConfig.trim() === '') {
       return [];
@@ -706,12 +705,14 @@ export class Envs {
       'CUSTOM_MERGE_RULES': { category: 'source', type: 'text', sources: this.MERGE_ALLOWED_SOURCES, description: '合并映射表，用于自定义源合并行为。\n格式1(合并)：副源剧名/S季数@来源 -> 主源剧名/S季数@来源 | E副源集数>E主源集数\n格式2(阻断)：副源剧名/S季数@来源 × 主源剧名/S季数@来源\n说明：[/S季数] 与 [|路由规则] 为可选项，留空则交由程序判断。多个规则用分号隔开，多段路由用逗号分隔。\n示例：\n1. 常规合并：天气之子@bilibili -> 天气之子@dandan\n2. 多集路由：我推的孩子/S01@bahamut -> 我推的孩子/S03@dandan | E25~E35>E25~E35\n3. 阻断合并：辉夜大小姐想让我告白？～天才们的恋爱头脑战～(2020)@bilibili × 辉夜大小姐想让我告白～天才们的恋爱头脑战～ OVA(2021)【OVA】@dandan' },
       'OTHER_SERVER': { category: 'source', type: 'text', description: '第三方弹幕服务器，默认https://api.danmu.icu' },
       'CUSTOM_SOURCE_API_URL': { category: 'source', type: 'text', description: '自定义弹幕源API地址，默认为空，配置后还需在SOURCE_ORDER添加custom源' },
-      'VOD_SERVERS': { category: 'source', type: 'text', description: 'VOD站点配置，格式：名称@URL,名称@URL，默认金蝉@https://zy.jinchancaiji.com,789@https://www.caiji.cyou,听风@https://gctf.tfdh.top' },
+      'VOD_SERVERS': { category: 'source', type: 'text', description: 'VOD站点配置，格式：名称@URL,名称@URL，默认为空；未配置时跳过 VOD，不发送请求' },
       'VOD_RETURN_MODE': { category: 'source', type: 'select', options: ['all', 'fastest'], description: 'VOD返回模式：all（所有站点）或 fastest（最快的站点），默认fastest' },
       'VOD_REQUEST_TIMEOUT': { category: 'source', type: 'number', description: 'VOD请求超时时间，默认10000', min: 5000, max: 30000 },
       'BILIBILI_COOKIE': { category: 'source', type: 'text', description: 'B站Cookie' },
       'DOUBAN_COOKIE': { category: 'source', type: 'text', description: '豆瓣Cookie' },
       'YOUKU_CONCURRENCY': { category: 'source', type: 'number', description: '优酷并发配置，默认8', min: 1, max: 16 },
+      'TENCENT_CONCURRENCY': { category: 'source', type: 'number', description: '腾讯弹幕分片并发配置，默认100', min: 1, max: 200 },
+      'IQIYI_CONCURRENCY': { category: 'source', type: 'number', description: '爱奇艺弹幕分片并发配置，默认100', min: 1, max: 200 },
       'DANDANPLAY_ACCOUNT': { category: 'source', type: 'text', description: '弹弹play账号（dandan 源使用）。\n与密码同时填写后开启 NipaPlay 中转弹弹play辅助服务，使用 NipaPlay 获取弹幕与兜底，解决默认服务端无弹幕与更新缓慢的问题，并开启弹弹聚合弹幕实时拉取功能\n（实时拉取注意：需先开启对应源；指向的平台视频若已下架将无法获取；含巴哈姆特平台时需确保能够连通巴哈）。' },
       'DANDANPLAY_PASSWORD': { category: 'source', type: 'text', description: '弹弹play密码（dandan 源使用）\n与账号同时填写后开启 NipaPlay 中转弹弹play辅助服务。\n点击编辑界面的测试连通性按钮可验证账号与 NipaPlay 中转弹弹play服务端是否可用' },
       
@@ -723,7 +724,8 @@ export class Envs {
       'STRICT_TITLE_MATCH': { category: 'match', type: 'boolean', description: '严格标题匹配模式' },
       'TITLE_TO_CHINESE': { category: 'match', type: 'boolean', description: '外语标题转换中文开关' },
       'ANIME_TITLE_SIMPLIFIED': { category: 'match', type: 'boolean', description: '搜索的剧名标题自动繁转简' },
-      'TITLE_MAPPING_TABLE': { category: 'match', type: 'map', description: '剧名映射表，用于自动匹配时替换标题进行搜索，格式：原始标题->映射标题;原始标题->映射标题;... ，例如："唐朝诡事录->唐朝诡事录之西行;国色芳华->锦绣芳华"' },
+      'TITLE_MAPPING_TABLE': { category: 'match', type: 'map', description: '本机剧名映射表，用于自动匹配时替换标题进行搜索。本机规则优先于远程规则。格式：原始标题->映射标题;原始标题->映射标题;...，例如："唐朝诡事录->唐朝诡事录之西行;国色芳华->锦绣芳华"' },
+      'TITLE_MAPPING_TABLE_URL': { category: 'match', type: 'text', description: '远程剧名映射表（默认关闭，填写后启用）。示例：https://raw.githubusercontent.com/xlmc/danmu-mapping/main/Word/2026.txt。本机 TITLE_MAPPING_TABLE 优先；Node/Docker 会缓存到 .cache 并在每天北京时间05:30后台更新；Serverless 冷启动后的首次标题匹配会同步下载，最长约等待5秒，配置本变量即表示接受该延迟。支持 GitHub 文件页、Gist、jsDelivr 和 HTTP/HTTPS TXT 直链；内容格式为每行 原始标题->映射标题，# 或 // 开头为注释' },
       'AUTO_MATCH_MAPPING_TABLE': { category: 'match', type: 'map', description: '自动匹配映射表，仅作用于 POST /api/v2/match。多个规则使用分号分隔。\n开放映射：永生 S05E02 -> 永生 S01E58\n有限范围：永生 S05E02~03 -> 永生 S01E58~59\n指定结果：海贼王 S02E01 -> 航海王(1999)【动漫】 S01E62\n指定平台：航海王 S01E01 -> 航海王 S01E01 @qiyi' },
       'TITLE_NOISE_FILTER': { category: 'match', type: 'text', description: '剧名杂音清理规则，按正则表达式清理搜索与匹配阶段的剧名杂音词（如`百花杀（真彩）`→`百花杀`）。\n默认值：[（(\\[［](?:臻彩|真彩|高清|标清|超清|国配|中配|日配|粤语|原声|台配|无修|未删减|完整版|日语版|国语版|英语版|中字|字幕|助听|原版)[\\])）］]，中英文圆方括号均匹配。\n设为空值可禁用' },
       'AI_BASE_URL': { category: 'match', type: 'text', description: 'AI服务基础URL，不填默认为https://api.openai.com/v1' },
@@ -791,6 +793,8 @@ export class Envs {
       bilibliCookie: this.get('BILIBILI_COOKIE', '', 'string', true), // b站cookie
       doubanCookie: this.get('DOUBAN_COOKIE', '', 'string', true), // 豆瓣cookie
       youkuConcurrency: Math.min(this.get('YOUKU_CONCURRENCY', 8, 'number'), 16), // 优酷并发配置
+      tencentConcurrency: Math.max(1, Math.min(this.get('TENCENT_CONCURRENCY', 100, 'number'), 200)), // 腾讯弹幕分片并发配置
+      iqiyiConcurrency: Math.max(1, Math.min(this.get('IQIYI_CONCURRENCY', 100, 'number'), 200)), // 爱奇艺弹幕分片并发配置
       dandanplayAccount: this.get('DANDANPLAY_ACCOUNT', '', 'string', true), // 弹弹play账号，dandan 源使用
       dandanplayPassword: this.get('DANDANPLAY_PASSWORD', '', 'string', true), // 弹弹play密码，dandan 源使用
       platformOrderArr: this.resolvePlatformOrder(), // 自动匹配优选平台
@@ -829,6 +833,7 @@ export class Envs {
       titleToChinese: this.get('TITLE_TO_CHINESE', false, 'boolean'), // 外语标题转换中文开关
       animeTitleSimplified: this.get('ANIME_TITLE_SIMPLIFIED', false, 'boolean'), // 搜索的剧名标题自动繁转简
       titleMappingTable: this.resolveTitleMappingTable(), // 剧名映射表，用于自动匹配时替换标题进行搜索
+      titleMappingTableUrl: this.get('TITLE_MAPPING_TABLE_URL', '', 'string'), // 远程剧名映射表地址（由用户托管维护，自动拉取生效）
       autoMatchMappingTable: this.resolveAutoMatchMappingTable(), // 自动匹配标题/季度/集数映射规则
       ipBlacklist: this.resolveIpBlacklist(), // IP 黑名单（支持正则）
       aiBaseUrl: this.get('AI_BASE_URL', 'https://api.openai.com/v1', 'string'), // AI服务基础URL
